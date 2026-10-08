@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DroneRoofer 外壁診断 - 図面入力</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f1ee;--pn:#fbfaf8;--bd:#e2ded8;--tx:#2b2a28;--mu:#8a857d;--ac:#d9622b;--st:#2a2a2a;--fn:"Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,sans-serif}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1c1b;--pn:#2a2928;--bd:#403e3b;--tx:#eceae6;--mu:#9d988f;--st:#111}}
+:root[data-theme="dark"]{--bg:#1d1c1b;--pn:#2a2928;--bd:#403e3b;--tx:#eceae6;--mu:#9d988f;--st:#111}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:13px/1.5 var(--fn);display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--pn);border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.logo{font-weight:700;font-size:16px;margin-right:8px}.logo b{color:var(--ac)}
+button,.btn{font:inherit;color:var(--tx);background:var(--pn);border:1px solid var(--bd);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover,.btn:hover{border-color:var(--ac)}button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.dk{background:var(--st);color:#fff;border-color:var(--st)}.sp{flex:1}
+.pg{font-weight:700;font-size:15px}.pg small{color:var(--mu);font-weight:400}
+#pn{width:60px;font:inherit;font-weight:700;padding:3px 4px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx)}
+main{flex:1;display:flex;min-height:0}
+#tools{width:58px;background:var(--pn);border-right:1px solid var(--bd);display:flex;flex-direction:column;gap:6px;padding:8px 5px;overflow:auto}
+#tools button{display:flex;flex-direction:column;align-items:center;padding:6px 0;font-size:10px;line-height:1.2}
+#tools button span{font-size:18px}
+#stage{flex:1;overflow:auto;background:#262626;padding:20px;position:relative}
+.sheet{position:relative;margin:0 auto 16px;box-shadow:0 2px 14px #0008;background:#fff}
+canvas,svg{display:block;position:absolute;left:0;top:0;width:100%;height:100%}
+.sheet svg{touch-action:pan-x pan-y pinch-zoom}.sheet,svg,canvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}#pages.dw,#pages.dw .sheet,#pages.dw svg,#pages.dw svg *,#pages.dw canvas{touch-action:none}
+.no{position:absolute;left:6px;top:4px;font-size:11px;background:#000a;color:#fff;padding:0 7px;border-radius:4px;pointer-events:none}
+#empty{color:#bbb;text-align:center;margin-top:12vh;font-size:15px}
+aside{width:290px;background:var(--pn);border-left:1px solid var(--bd);display:flex;flex-direction:column}
+.tabs{display:flex;border-bottom:1px solid var(--bd)}.tabs div{flex:1;text-align:center;padding:10px;cursor:pointer;color:var(--mu)}
+.tabs .on{color:var(--tx);font-weight:700;border-bottom:2px solid var(--ac)}
+.body{flex:1;overflow:auto;padding:12px}
+.ty{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:6px;padding:9px 10px;text-align:left}
+.ty i{width:14px;height:14px;border-radius:3px;flex:none}.ty em{margin-left:auto;font-style:normal;color:var(--mu)}
+.ty.on{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac)}
+.it{display:flex;align-items:center;gap:6px;padding:6px 4px;border-bottom:1px solid var(--bd);cursor:pointer}
+.it i{width:10px;height:10px;border-radius:2px;flex:none}.it span{margin-left:auto;color:var(--mu);font-size:11px;white-space:nowrap}
+input[type=text]{width:100%;padding:6px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
+h4{margin:12px 0 6px;font-size:12px;color:var(--mu)}
+.it.sl{background:rgba(30,144,255,.16)}
+#pages,.sheet svg{-webkit-user-select:none;user-select:none}
+dialog{background:var(--pn);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:16px 18px;font:inherit;min-width:260px}
+dialog>div{margin-bottom:8px}
+#printArea{display:none}
+@media print{html.pr,body.pr{height:auto!important;overflow:visible!important;background:#fff!important;padding:0!important;margin:0!important}
+body.pr{display:block!important}body.pr>*{display:none!important}body.pr>#printArea{display:block!important}}
+@media(max-width:760px){aside{width:200px}}
+</style></head><body>
+<header>
+<div class="logo"><b>▲</b> DroneRoofer <b>外壁診断</b></div>
+<label class="btn">📄 図面を開く(複数可)<input id="file" type="file" accept="application/pdf,image/*" multiple hidden></label><select id="fs" class="btn" style="max-width:200px"></select>
+<button id="prev">‹</button><span class="pg"><input id="pn" type="number" min="1" value="0"> <small>/ <span id="pt">0</span></small></span><button id="next">›</button>
+<button id="zo">－</button><button id="zi">＋</button><button id="zf">全体</button>
+<label class="btn"><input type="checkbox" id="imp" checked> PDF注釈を取込</label><span id="msg" style="color:var(--mu)"></span>
+<span class="sp"></span>
+<button id="sv">保存(JSON)</button>
+<label class="btn">読込<input id="ld" type="file" accept=".json" hidden></label>
+<button class="dk" id="png">⤓ PNG出力(表示中ページ)</button>
+<button class="dk" id="pdfb">⤓ PDF保存</button>
+<button class="dk" id="prt">🖨 印刷</button>
+</header>
+<main>
+<div id="tools"></div>
+<div id="stage"><div id="empty">図面(PDF・画像)を開いてください<br><small>全ページを縦にスクロールして確認しながら、劣化箇所を直接記入できます</small></div>
+<div id="pages"></div></div>
+<aside><div class="tabs"><div class="on" data-t="0">傷</div><div data-t="1">一覧</div></div><div class="body" id="pb"></div></aside>
+</main>
+<dialog id="pd"><div style="font-weight:700" id="pdt">印刷</div>
+<div><label><input type="radio" name="pr" value="cur" checked> 表示中のページ</label></div>
+<div><label><input type="radio" name="pr" value="all"> 全ページ(<span id="pdn">0</span>ページ)</label></div>
+<div id="prow">用紙: <select id="psz" class="btn"><option value="A4">A4</option><option value="A3">A3</option></select> <small style="color:var(--mu)">縦横は図面に合わせて自動</small></div>
+<div style="text-align:right;margin:10px 0 0"><button id="pc">キャンセル</button> <button class="on" id="po">印刷</button></div></dialog>
+<div id="printArea"></div>
+<script>
+const T={uki:{n:'タイル浮き',c:'#e03131'},ware:{n:'タイル割れ',c:'#e8590c'},efl:{n:'エフロ(白華)',c:'#7048e8'},caulk:{n:'コーキング劣化',c:'#1c7ed6'},imp:{n:'取込図形',c:'#6b6b6b'},hage:{n:'防水シート剥れ',c:'#2f9e44'},sUki:{n:'防水シート浮き',c:'#d4a017'}};
+const TL=[['select','↖','選択'],['marq','⬚','範囲選択'],['rect','▭','四角'],['ellipse','◯','丸'],['poly','⬠','ポリゴン'],['pen','✎','ペン'],['line','╱','線'],['del','🗑','削除']];
+const DS={fill:true,fo:.2,stroke:true,so:1,sw:4,dash:false};
+let files=[],fi=0,imported=new Set(),doc=null,pgs=[],page=1,total=0,zoom=1,tool='select',type='uki',anns=[],sels=new Set(),mq=null,cur=null,tab=0,uid=1,drag=null,gen=0,io=null,impN=0,tk=0;
+const $=id=>document.getElementById(id),PG=$('pages'),ST=$('stage');
+$('tools').innerHTML=TL.map(t=>`<button data-k="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('');
+$('tools').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.k==='del'){del();return}tool=b.dataset.k;cur=null;mq=null;tools();drawAll()};
+function tools(){document.querySelectorAll('#tools button').forEach(b=>b.classList.toggle('on',b.dataset.k===tool));PG.classList.toggle('dw',tool!=='select')}
+document.querySelectorAll('.tabs div').forEach(d=>d.onclick=()=>{tab=+d.dataset.t;document.querySelectorAll('.tabs div').forEach(x=>x.classList.toggle('on',x===d));panel()});
+
+/* ---- ファイル読込 ---- */
+$('file').onchange=async e=>{const first=files.length;
+ for(const f of e.target.files){const o={name:f.name};
+  if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){o.doc=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;o.total=o.doc.numPages}
+  else{o.img=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=URL.createObjectURL(f)});o.total=1}
+  files.push(o)}
+ e.target.value='';if(files.length>first)await sw(first,1)};
+$('fs').onchange=e=>sw(+e.target.value,1);
+async function sw(i,pg){fi=i;const o=files[i];doc=o.doc;total=o.total;const my=++gen;if(io)io.disconnect();PG.innerHTML='';pgs=[];sels=new Set();cur=null;mq=null;
+ $('fs').innerHTML=files.map((f,k)=>`<option value="${k}">${f.name.replace(/</g,'')}</option>`).join('');$('fs').value=i;$('empty').style.display='none';
+ io=new IntersectionObserver(es=>es.forEach(en=>{const k=+en.target.dataset.i,g=pgs[k];if(!g)return;g.vis=en.isIntersecting;if(g.vis)render(k);else if(g.rendered&&!g.busy)release(g)}),{root:ST,rootMargin:'1500px 0px'});
+ for(let k=0;k<total;k++){const el=document.createElement('div');el.className='sheet';el.dataset.i=k;el.innerHTML='<canvas></canvas><svg></svg><b class="no">'+(k+1)+'</b>';PG.appendChild(el);
+  pgs.push({el,cv:el.children[0],svg:el.children[1],d:doc,img:o.img||null,rendered:false,busy:false,vis:false});io.observe(el)}
+ $('pt').textContent=total;await prep(0);fit();toPage(pg);tools();panel();bg(my)}
+async function prep(i){const g=pgs[i];if(!g||g.v)return;
+ if(g.img){g.W=g.img.naturalWidth;g.H=g.img.naturalHeight;g.v=true}
+ else{g.p=await g.d.getPage(i+1);const v1=g.p.getViewport({scale:1}),s=Math.min(2,2400/v1.width);g.v=g.p.getViewport({scale:s});g.W=g.v.width;g.H=g.v.height}
+ g.svg.setAttribute('viewBox',`0 0 ${g.W} ${g.H}`);sz(g)}
+function sz(g){const b=pgs[0]||{},W=g.W||b.W||1000,H=g.H||b.H||1414;g.el.style.width=W*zoom+'px';g.el.style.height=H*zoom+'px'}
+function setZ(){const r=ST.scrollTop/(ST.scrollHeight||1);pgs.forEach(sz);ST.scrollTop=r*ST.scrollHeight;drawAll()}
+function fit(){zoom=(ST.clientWidth-40)/((pgs[0]&&pgs[0].W)||1000);setZ()}
+$('zi').onclick=()=>{zoom*=1.2;setZ()};$('zo').onclick=()=>{zoom/=1.2;setZ()};$('zf').onclick=fit;
+/* Ctrl+ホイール(トラックパッドのピンチ含む)=図面表示部分のみ拡大縮小。操作パネルはブラウザ拡大も含め固定 */
+let wz=null;
+addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();
+ if(!ST.contains(e.target)||!pgs.length)return;
+ const d=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?400:1),f=Math.exp(-Math.max(-300,Math.min(300,d))*.0015);
+ if(!wz){const sh=e.target.closest&&e.target.closest('.sheet'),r=sh?sh.getBoundingClientRect():null;
+  wz={f:1,mx:e.clientX,my:e.clientY,sh,fx:r?(e.clientX-r.left)/r.width:0,fy:r?(e.clientY-r.top)/r.height:0};
+  requestAnimationFrame(()=>{const w=wz;wz=null;const nz=Math.min(8,Math.max(.1,zoom*w.f));if(nz===zoom)return;zoom=nz;pgs.forEach(sz);drawAll();
+   if(w.sh){const r=w.sh.getBoundingClientRect();ST.scrollLeft+=r.left+w.fx*r.width-w.mx;ST.scrollTop+=r.top+w.fy*r.height-w.my}})}
+ wz.f*=f},{passive:false});
+async function render(i){const g=pgs[i];if(!g||g.busy||g.rendered)return;g.busy=true;const my=gen;
+ try{await prep(i);if(my!==gen)return;g.cv.width=g.W;g.cv.height=g.H;const x=g.cv.getContext('2d');
+  if(g.img)x.drawImage(g.img,0,0);else await g.p.render({canvasContext:x,viewport:g.v,annotationMode:$('imp').checked?0:1}).promise;
+  g.rendered=true}catch(e){console.error(e)}finally{g.busy=false}
+ if(!g.vis&&g.rendered)release(g)}
+function release(g){g.cv.width=g.cv.height=1;g.rendered=false}
+$('imp').onchange=()=>{pgs.forEach((g,i)=>{if(g.rendered&&!g.busy)release(g);if(g.vis)render(i)});bg(gen)};
+async function bg(my){for(let i=0;i<pgs.length&&my===gen;i++){await prep(i);if(my!==gen)return;impPage(i)}if(my===gen)panel()}
+function impPage(i){const g=pgs[i];const key=fi+':'+(i+1);if(!g||g.img||!$('imp').checked||imported.has(key))return;imported.add(key);
+ return g.p.getAnnotations({intent:'display'}).then(L=>{const X=(x,y)=>g.v.convertToViewportPoint(x,y),page=i+1;
+ const rgb=c=>c&&c.length>=3?'#'+[0,1,2].map(k=>(c[k]|0).toString(16).padStart(2,'0')).join(''):null;
+ const add=(shape,pts,n,o={})=>{const sc=rgb(n.color),ic=rgb(n.interiorColor||n.backgroundColor||n.fillColor),closed=shape!=='line'&&shape!=='pen';
+  const op=[n.opacity,n.CA,n.fillOpacity].find(v=>typeof v==='number'),bs=n.borderStyle||{},w=bs.width!=null?bs.width:n.borderWidth;
+  const s=Object.assign({stroke:n.color!==null&&!(w===0),sc:sc||'#e03131',so:op!=null?op:1,fill:closed&&!!ic,fc:ic||sc||'#e03131',fo:op!=null?op:1,sw:w>0?Math.max(.5,w*g.v.scale):3,dash:bs.style===2},o.s||{});
+  const a={id:uid++,page,f:fi,type:'imp',shape,pts,s,memo:(n.contentsObj&&n.contentsObj.str)||n.contents||''};if(o.showText)a.showText=true;anns.push(a);impN++};
+ for(const n of L){const r=n.rect,t=n.subtype;
+  if(t==='Square'||t==='Circle')add(t==='Circle'?'ellipse':'rect',[X(r[0],r[1]),X(r[2],r[3])],n);
+  else if(t==='Highlight')add('rect',[X(r[0],r[1]),X(r[2],r[3])],n,{s:{fill:true,fc:rgb(n.color)||'#ffe94d',stroke:false,fo:typeof n.opacity==='number'?n.opacity:.4}});
+  else if(t==='FreeText')add('rect',[X(r[0],r[1]),X(r[2],r[3])],n,{showText:true,s:{stroke:false,sc:'#000'}});
+  else if(t==='Line'&&n.lineCoordinates){const q=n.lineCoordinates;add('line',[X(q[0],q[1]),X(q[2],q[3])],n)}
+  else if((t==='Polygon'||t==='PolyLine')&&n.vertices){let q=n.vertices;if(typeof q[0]==='number')q=q.reduce((a,x,k)=>k%2?(a[a.length-1].y=x,a):a.concat({x}),[]);add(t==='Polygon'?'poly':'line',q.map(o=>X(o.x,o.y)),n)}
+  else if(t==='Ink'&&n.inkLists)n.inkLists.forEach(l=>add('pen',l.map(o=>X(o.x,o.y)),n))}
+ $('msg').textContent=impN?`PDF注釈 ${impN}件を編集可能に変換`:'';draw(i)})}
+
+/* ---- ページ移動 ---- */
+function toPage(n){n=Math.min(total,Math.max(1,n));const g=pgs[n-1];if(g)ST.scrollTo({top:g.el.offsetTop-10})}
+$('prev').onclick=()=>toPage(page-1);$('next').onclick=()=>toPage(page+1);$('pn').onchange=e=>toPage(+e.target.value);
+ST.addEventListener('scroll',()=>{if(tk)return;tk=requestAnimationFrame(()=>{tk=0;const y=ST.scrollTop+ST.clientHeight*.35;let k=0;
+ while(k<pgs.length-1&&pgs[k].el.offsetTop+pgs[k].el.offsetHeight<y)k++;page=k+1;if(document.activeElement!==$('pn'))$('pn').value=page})});
+function focusAnn(a){const g=pgs[a.page-1];if(!g)return;const y=Math.min(...a.pts.map(q=>q[1]));ST.scrollTo({top:g.el.offsetTop+y*zoom-120})}
+
+/* ---- 描画 ---- */
+function label(a){if(a.shape==='legend')return'凡例';const l=anns.filter(x=>x.type===a.type);return T[a.type].n+'-'+(l.indexOf(a)+1)}
+function st(a){const c=a.color||TT(a.type).c;return Object.assign({},DS,{sc:c,fc:c},a.s||{})}
+function showT(a){return a.showText!==undefined?a.showText:!(a.type==='imp'||a.type==='uki')}
+function shape(a,live,W){if(a.shape==='legend')return legSvg(a,sels.has(a.id)&&!live,W);const S=st(a),p=a.pts,sl=sels.has(a.id)&&!live,open=a.shape==='line'||a.shape==='pen',fs=W/180;let lp=p[0],g;
+ if(a.shape==='rect'){const x=Math.min(p[0][0],p[1][0]),y=Math.min(p[0][1],p[1][1]),w=Math.abs(p[1][0]-p[0][0]),h=Math.abs(p[1][1]-p[0][1]);lp=[x,y];g=at=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" ${at}/>`}
+ else if(a.shape==='ellipse'){lp=[Math.min(p[0][0],p[1][0]),Math.min(p[0][1],p[1][1])];g=at=>`<ellipse cx="${(p[0][0]+p[1][0])/2}" cy="${(p[0][1]+p[1][1])/2}" rx="${Math.abs(p[1][0]-p[0][0])/2}" ry="${Math.abs(p[1][1]-p[0][1])/2}" ${at}/>`}
+ else if(a.shape==='poly')g=at=>`<polygon points="${p.join(' ')}" ${at}/>`;
+ else g=at=>`<polyline points="${p.join(' ')}" ${at}/>`;
+ const fl=(open||!S.fill)?'fill="none"':`fill="${S.fc}" fill-opacity="${S.fo}"`;
+ const sk=S.stroke?`stroke="${S.sc}" stroke-opacity="${S.so}" stroke-width="${S.sw}"`+(S.dash?` stroke-dasharray="${S.sw*3} ${S.sw*2}"`:''):'stroke="none"';
+ let el=(sl?g(`fill="none" stroke="#1e90ff" stroke-opacity=".6" stroke-width="${S.sw*zoom+5}" vector-effect="non-scaling-stroke" style="pointer-events:none"`):'')+(open?g(`fill="none" stroke="transparent" stroke-width="${Math.max(S.sw,14/zoom)}" pointer-events="stroke" data-id="${a.id}" stroke-linecap="round" stroke-linejoin="round" style="cursor:move"`):'')+g(`${open?'':'pointer-events="all" '}data-id="${a.id}" stroke-linecap="round" stroke-linejoin="round" style="cursor:move" ${fl} ${sk}`);
+ const txt=a.type==='imp'?(a.memo||''):label(a)+(a.memo?'：'+a.memo:'');
+ if(!live&&showT(a)&&txt){const o=a.to||[0,0];el+=`<text x="${lp[0]+o[0]}" y="${lp[1]-fs*.4+o[1]}" font-size="${fs}" font-weight="700" fill="${S.sc}" stroke="#fff" stroke-width="2" paint-order="stroke" ${tool!=='marq'?`data-id="${a.id}" data-t="1" style="pointer-events:all;cursor:move;user-select:none"`:'style="pointer-events:none"'}>${txt.replace(/[<&]/g,'')}</text>`}
+ if(sl&&sels.size===1&&a.shape!=='pen')el+=a.pts.slice(0,60).map((q,i)=>`<circle cx="${q[0]}" cy="${q[1]}" r="${W/880}" fill="#fff" stroke="#1e90ff" stroke-width="1" vector-effect="non-scaling-stroke" data-id="${a.id}" data-h="${i}" style="cursor:move"/>`).join('');
+ return el}
+function draw(i){const g=pgs[i];if(!g)return;const W=g.W||1000;g.svg.innerHTML=anns.filter(a=>a.f===fi&&a.page===i+1).map(a=>shape(a,0,W)).join('')+(cur&&cur.pi===i?shape(cur,1,W):'')+(mq&&mq.i===i?mqSvg():'')}
+/* ---- 凡例・防水種別 ---- */
+const TT=k=>T[k]||{n:'凡例',c:'#666'};
+const WPS=['防水シート','ゴムシート防水','ウレタン防水'];let wp='防水シート';
+function applyWp(v){wp=v;T.hage.n=v+'剥れ';T.sUki.n=v+'浮き';anns.forEach(a=>{if(a.shape==='legend')legFix(a)})}
+function setWp(v){applyWp(v);drawAll();panel()}
+const LG=[['uki','ware','efl'],['caulk','hage','sUki']],LFS=44,LSQ=52,LFONT='Hiragino Sans,Noto Sans JP,Yu Gothic,Meiryo,sans-serif';
+function tw(t){let w=0;for(const c of t)w+=c.charCodeAt(0)<256?.55:1;return w*LFS}
+function legL(){const l=Math.max(...LG[0].map(k=>tw(T[k].n))),r=Math.max(...LG[1].map(k=>tw(T[k].n))),x2=25+LSQ+33+l+70;return{DW:Math.round(x2+LSQ+33+r+25),DH:240,x2}}
+function legFix(a){const L=legL();a.pts[1]=[a.pts[0][0]+a.lw,a.pts[0][1]+a.lw*L.DH/L.DW]}
+function legSvg(a,sl,W){const L=legL(),x=a.pts[0][0],y=a.pts[0][1],k=a.lw/L.DW,h=a.lw*L.DH/L.DW,bg=a.bg!==false;
+ let t=`<g transform="translate(${x} ${y}) scale(${k})" style="pointer-events:none" font-family="${LFONT}">`;
+ if(bg)t+=`<rect width="${L.DW}" height="${L.DH}" rx="14" fill="#fff" fill-opacity=".92" stroke="#999" stroke-width="2"/>`;
+ LG.forEach((col,ci)=>col.forEach((key,r)=>{const cx=ci?L.x2:25,cy=47+r*79;
+  t+=`<rect x="${cx}" y="${cy-26}" width="${LSQ}" height="${LSQ}" rx="10" fill="${T[key].c}"/><text x="${cx+85}" y="${cy}" font-size="${LFS}" font-weight="700" fill="#111" dominant-baseline="central"${bg?'':' stroke="#fff" stroke-width="6" paint-order="stroke"'}>${T[key].n}</text>`}));
+ t+='</g>'+`<rect x="${x}" y="${y}" width="${a.lw}" height="${h}" fill="none" pointer-events="all" data-id="${a.id}" style="cursor:move"/>`;
+ if(sl){t+=`<rect x="${x}" y="${y}" width="${a.lw}" height="${h}" fill="none" stroke="#1e90ff" stroke-opacity=".7" stroke-width="2" stroke-dasharray="6 4" vector-effect="non-scaling-stroke" style="pointer-events:none"/>`;
+  if(sels.size===1)t+=`<circle cx="${x+a.lw}" cy="${y+h}" r="${W/160}" fill="#fff" stroke="#1e90ff" stroke-width="1.5" vector-effect="non-scaling-stroke" data-id="${a.id}" data-h="1" style="cursor:nwse-resize"/>`}
+ return t}
+function pasteLegend(){if(!pgs.length){alert('図面を開いてください');return}const g=pgs[page-1];if(!g||!g.W)return;
+ const sr=ST.getBoundingClientRect(),pr=g.el.getBoundingClientRect(),lw=Math.round(g.W*.25),
+  x=Math.min(Math.max(0,(sr.left-pr.left)/zoom)+g.W*.02,g.W-lw),y=Math.min(Math.max(0,(sr.top-pr.top)/zoom)+g.W*.02,g.H*.9),
+  a={id:uid++,page,f:fi,type:'legend',shape:'legend',lw,bg:true,pts:[[x,y],[0,0]]};legFix(a);anns.push(a);sels=new Set([a.id]);drawAll();panel()}
+/* ---- 複数選択 ---- */
+function SA(){return anns.filter(a=>sels.has(a.id))}
+function bb(a){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const q of a.pts){if(q[0]<x0)x0=q[0];if(q[0]>x1)x1=q[0];if(q[1]<y0)y0=q[1];if(q[1]>y1)y1=q[1]}return[x0,y0,x1,y1]}
+/* 左→右ドラッグ=完全に囲んだ図形 / 右→左ドラッグ=触れた図形も(CAD方式) */
+function mqHits(m){const x0=Math.min(m.p0[0],m.p1[0]),x1=Math.max(m.p0[0],m.p1[0]),y0=Math.min(m.p0[1],m.p1[1]),y1=Math.max(m.p0[1],m.p1[1]),cross=m.p1[0]<m.p0[0];
+ return anns.filter(a=>{if(a.f!==fi||a.page!==m.i+1)return false;const b=bb(a);return cross?(b[2]>=x0&&b[0]<=x1&&b[3]>=y0&&b[1]<=y1):(b[0]>=x0&&b[2]<=x1&&b[1]>=y0&&b[3]<=y1)}).map(a=>a.id)}
+function mqSvg(){const x=Math.min(mq.p0[0],mq.p1[0]),y=Math.min(mq.p0[1],mq.p1[1]),w=Math.abs(mq.p1[0]-mq.p0[0]),h=Math.abs(mq.p1[1]-mq.p0[1]),c=mq.p1[0]<mq.p0[0],col=c?'#2f9e44':'#1e90ff';
+ return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${col}" fill-opacity=".12" stroke="${col}" stroke-width="1.5" ${c?'stroke-dasharray="6 4" ':''}vector-effect="non-scaling-stroke" style="pointer-events:none"/>`}
+function drawAll(){pgs.forEach((g,i)=>draw(i))}
+
+/* ---- 操作(ページ共通のイベント) ---- */
+const gi=e=>{const g=e.target.closest&&e.target.closest('.sheet');return g?+g.dataset.i:-1};
+function pt(e,i){const g=pgs[i],r=g.svg.getBoundingClientRect();return[(e.clientX-r.left)*g.W/r.width,(e.clientY-r.top)*g.H/r.height]}
+PG.addEventListener('pointerdown',e=>{if(e.button>0)return;const i=gi(e);if(i<0||!pgs[i].W)return;const p=pt(e,i),id=e.target.dataset&&e.target.dataset.id;
+ const sh=id&&tool!=='marq'&&(tool==='select'||(!cur&&!e.altKey));
+ if(tool==='select'||tool==='marq'||sh){const h=e.target.dataset.h,mod=e.shiftKey||e.ctrlKey||e.metaKey;drag=null;
+  if(sh){const n=+id;
+   if(mod){if(sels.has(n)){sels.delete(n);drawAll();panel();return}sels.add(n)}else if(!sels.has(n))sels=new Set([n]);
+   drag={i,p0:p,last:p,a:anns.find(a=>a.id==id),h:h===undefined?null:+h,txt:e.target.dataset.t==='1',moved:false,solo:(!mod&&sels.size>1)?n:null};
+   pgs[i].svg.setPointerCapture(e.pointerId);drawAll();panel();return}
+  if(tool==='select'&&e.pointerType==='touch'){sels=new Set();drawAll();panel();return}
+  const add=tool==='marq'||mod;mq={i,p0:p,p1:p,add,base:new Set(add?sels:[]),tg:id?+id:null};
+  if(!add){sels=new Set();drawAll();panel()}
+  pgs[i].svg.setPointerCapture(e.pointerId);return}
+ if(tool==='poly'){if(cur&&cur.pi!==i)return;const now=performance.now();
+  if(cur&&cur.lt&&now-cur.lt<400&&Math.hypot(p[0]-cur.lp[0],p[1]-cur.lp[1])*zoom<12){finishPoly();return}
+  if(!cur)cur={id:0,pi:i,type,shape:'poly',pts:[p,p]};else cur.pts.splice(cur.pts.length-1,0,p);
+  cur.lt=now;cur.lp=p;draw(i);return}
+ cur={id:0,pi:i,type,shape:tool,pts:tool==='pen'?[p]:[p,p]};pgs[i].svg.setPointerCapture(e.pointerId)});
+PG.addEventListener('pointermove',e=>{
+ if(mq){const i=mq.i,p=pt(e,i);mq.p1=p;sels=new Set(mq.base);if(Math.hypot(p[0]-mq.p0[0],p[1]-mq.p0[1])>pgs[i].W/300)mqHits(mq).forEach(id=>sels.add(id));draw(i);return}
+ if(drag){const i=drag.i,p=pt(e,i);if(!drag.moved){if(Math.hypot(p[0]-drag.p0[0],p[1]-drag.p0[1])<=pgs[i].W/400)return;drag.moved=true}
+  if(drag.txt){const o=drag.a.to||[0,0];drag.a.to=[o[0]+p[0]-drag.last[0],o[1]+p[1]-drag.last[1]];drag.last=p}else if(drag.h!=null){if(drag.a.shape==='legend'){drag.a.lw=Math.max(pgs[i].W/30,p[0]-drag.a.pts[0][0]);legFix(drag.a)}else drag.a.pts[drag.h]=p}else{const dx=p[0]-drag.last[0],dy=p[1]-drag.last[1];SA().filter(x=>x.f===fi&&x.page===drag.a.page).forEach(x=>{x.pts=x.pts.map(q=>[q[0]+dx,q[1]+dy])});drag.last=p}draw(i);return}
+ if(!cur)return;const i=cur.pi,p=pt(e,i);if(cur.shape==='pen'){const q=cur.pts[cur.pts.length-1];if(Math.hypot(p[0]-q[0],p[1]-q[1])>pgs[i].W/1500)cur.pts.push(p)}else cur.pts[cur.pts.length-1]=p;draw(i)});
+PG.addEventListener('pointercancel',()=>{if(mq){const i=mq.i;mq=null;draw(i)}drag=null;if(cur&&cur.shape!=='poly'){const i=cur.pi;cur=null;draw(i)}});
+PG.addEventListener('pointerup',()=>{
+ if(mq){const m=mq;mq=null;if(Math.hypot(m.p1[0]-m.p0[0],m.p1[1]-m.p0[1])<=pgs[m.i].W/300&&m.tg!=null){sels.has(m.tg)?sels.delete(m.tg):sels.add(m.tg)}drawAll();panel();return}
+ if(drag){const d=drag;drag=null;if(d.solo!=null&&!d.moved){sels=new Set([d.solo]);drawAll();panel()}return}if(!cur||cur.shape==='poly')return;const W=pgs[cur.pi].W,q=cur.pts;
+ if(Math.hypot(q[q.length-1][0]-q[0][0],q[q.length-1][1]-q[0][1])>W/300)commit();else{const i=cur.pi;cur=null;draw(i)}});
+PG.addEventListener('dblclick',finishPoly);
+/* ---- iPad対策: 描画ツール中は1本指/タッチペンで画面を動かさない。2本指でスクロール・ピンチ拡大 ---- */
+let tp=null;
+const tpMid=e=>{const a=e.touches[0],b=e.touches[1];return{x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2,d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}};
+ST.addEventListener('touchstart',e=>{
+ if(tool==='select')return;
+ if(e.touches.length>=2){
+  if(cur&&cur.shape!=='poly'){const i=cur.pi;cur=null;draw(i)}
+  if(mq){const i=mq.i;mq=null;draw(i)}
+  drag=null;tp=tpMid(e);e.preventDefault();return}
+ if(e.target.closest&&e.target.closest('.sheet'))e.preventDefault()
+},{passive:false});
+ST.addEventListener('touchmove',e=>{
+ if(tool==='select')return;
+ if(e.touches.length>=2){e.preventDefault();
+  const n=tpMid(e);if(!tp){tp=n;return}
+  const r=ST.getBoundingClientRect(),ax=ST.scrollLeft+n.x-r.left,ay=ST.scrollTop+n.y-r.top,k=tp.d>0?n.d/tp.d:1,nz=Math.min(8,Math.max(.1,zoom*k));
+  if(Math.abs(k-1)>.01&&nz!==zoom){const f=nz/zoom;zoom=nz;pgs.forEach(sz);drawAll();ST.scrollLeft=ax*f-(n.x-r.left);ST.scrollTop=ay*f-(n.y-r.top)}
+  ST.scrollLeft-=n.x-tp.x;ST.scrollTop-=n.y-tp.y;tp=n;return}
+ if(e.target.closest&&e.target.closest('.sheet'))e.preventDefault()
+},{passive:false});
+ST.addEventListener('touchend',e=>{if(e.touches.length<2)tp=null});
+ST.addEventListener('touchcancel',()=>{tp=null});
+addEventListener('gesturestart',e=>{if(ST.contains(e.target))e.preventDefault()});
+function finishPoly(){if(cur&&cur.shape==='poly'){cur.pts.pop();const W=pgs[cur.pi].W;while(cur.pts.length>1&&Math.hypot(cur.pts[cur.pts.length-1][0]-cur.pts[cur.pts.length-2][0],cur.pts[cur.pts.length-1][1]-cur.pts[cur.pts.length-2][1])<W/500)cur.pts.pop();if(cur.pts.length>2)commit();else{const i=cur.pi;cur=null;draw(i)}}}
+function commit(){const i=cur.pi;cur.page=i+1;cur.f=fi;cur.s={fill:DS.fill,fo:DS.fo,stroke:DS.stroke,so:DS.so,sw:DS.sw,dash:DS.dash};delete cur.pi;delete cur.lt;delete cur.lp;cur.id=uid++;anns.push(cur);sels=new Set([cur.id]);cur=null;drawAll();panel()}
+function del(){const L=SA();if(!L.length)return;if(L.length>1&&!confirm(L.length+'個の図形を削除しますか?'))return;const ids=new Set(L.map(x=>x.id));anns=anns.filter(x=>!ids.has(x.id));sels=new Set();drawAll();panel()}
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'){e.preventDefault();sels=new Set(anns.filter(a=>a.f===fi&&a.page===page).map(a=>a.id));drawAll();panel();return}
+ if(e.key==='Delete'||e.key==='Backspace')del();
+ if(e.key==='Escape'){if(cur){const i=cur.pi;cur=null;draw(i)}else{sels=new Set();drawAll();panel()}}if(e.key==='Enter')finishPoly()});
+
+/* ---- 右パネル ---- */
+function panel(){const b=$('pb');
+ if(tab===0){const A=SA(),n=A.length,a=A[0],S=a?Object.assign(st(a),{showText:showT(a)}):DS,
+   set=(k,v)=>{const L=SA();if(L.length)L.forEach(x=>{(x.s=x.s||{})[k]=v});else DS[k]=v;drawAll()};
+  const ck=(k,l)=>`<label style="display:block"><input type="checkbox" data-s="${k}" ${S[k]?'checked':''}> ${l}</label>`,
+   rg=(k,l,mn,mx,v)=>`<div>${l}: <b id="v_${k}">${v}</b><input type="range" data-s="${k}" min="${mn}" max="${mx}" step="1" value="${v}" style="width:100%"></div>`,
+   co=(k,l)=>a?`<label style="display:block">${l} <input type="color" data-s="${k}" value="${S[k]}"></label>`:'';
+  const L0=n>0&&A.every(x=>x.shape==='legend'),LW=a&&(pgs[a.page-1]||{W:1000}).W,
+   LCTL=L0?`<h4>凡例${n>1?'('+n+'個)':''}</h4><div>サイズ: <b id="v_lz">${Math.round(a.lw/LW*100)}</b>%<input type="range" data-lg="sz" min="5" max="80" step="1" value="${Math.round(a.lw/LW*100)}" style="width:100%"></div><label style="display:block"><input type="checkbox" data-lg="bg" ${a.bg!==false?'checked':''}> 白背景</label><div style="color:var(--mu);font-size:11px">ドラッグで移動、右下の○でサイズ変更</div>`:'';
+  const tc={};A.forEach(x=>tc[x.type]=(tc[x.type]||0)+1);const sum=Object.keys(tc).map(k=>TT(k).n+'×'+tc[k]).join('、');
+  b.innerHTML=Object.keys(T).map(k=>`<button class="ty ${k===type?'on':''}" data-k="${k}"><i style="background:${T[k].c}"></i>${T[k].n}<em>${anns.filter(x=>x.type===k).length}</em></button>`).join('')+
+  `<h4>凡例・防水種別</h4><div>防水の種別: <select id="wps" class="btn">${WPS.map(v=>`<option ${v===wp?'selected':''}>${v}</option>`).join('')}</select></div><button id="legb" title="凡例を図面に貼り付け" style="width:100%;margin-top:6px;padding:8px"><div style="display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,auto);gap:4px 10px;text-align:left;font-size:11px;font-weight:700">${LG.flat().map(k=>`<span style="display:flex;align-items:center;gap:5px"><i style="background:${T[k].c};width:12px;height:12px;border-radius:3px;flex:none"></i>${T[k].n}</span>`).join('')}</div><div style="margin-top:5px;color:var(--mu);font-size:11px;font-weight:400">クリックで図面に貼り付け(移動・サイズ変更可)</div></button>`+
+  `<h4>選択</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px"><button data-sa="page">このページ全て</button><button data-sa="all">全ページ全て</button><button data-sa="type">同じ種類を全て</button><button data-sa="none">選択解除</button></div>`+
+  (n?`<div style="margin-top:6px"><b>${n}個選択中</b><div style="color:var(--mu);font-size:11px">${sum}</div></div>`:'')+
+  (L0?LCTL:`<h4>図形の見た目(${n>1?n+'個の選択図形に一括適用':n?'選択中の図形':'新規図形の既定'})</h4>`+ck('fill','塗りつぶし')+co('fc','塗り色')+rg('tr','塗りの透過率 %',0,100,Math.round((1-S.fo)*100))+ck('stroke','枠線')+co('sc','枠色')+rg('str','枠の透過率 %',0,100,Math.round((1-S.so)*100))+rg('sw','枠の太さ',1,24,Math.round(S.sw))+ck('dash','破線')+(n?ck('showText','文字を表示')+'<button data-tr style="margin-top:4px">文字位置を戻す</button>':'')+
+  (n>1?`<div style="color:var(--mu);font-size:11px;margin-top:4px">※表示値は先頭の図形のもの。変更は選択中の全図形に反映されます</div>`:'')+
+  (n===1&&!L0?`<h4>選択中:${label(a)}</h4><input type="text" id="memo" placeholder="メモ" value="${(a.memo||'').replace(/"/g,'&quot;')}">`:'')+
+  (n?`<h4>種類を変更${n>1?'(選択中の全図形)':''}</h4>`+Object.keys(T).map(k=>`<button class="ty" data-c="${k}"><i style="background:${T[k].c}"></i>${T[k].n}</button>`).join(''):''))+
+  `<h4>操作</h4><div style="color:var(--mu);font-size:12px">種類を選び、左のツールで描画。ポリゴンはクリックで点を追加、ダブルクリック/Enterで確定。<br><b>選択:</b> クリック=1つ選択(四角・ペン等の描画ツール中でも既存図形は左クリックで選択・移動可。図形の上から新しく描くときは Alt を押しながらドラッグ) / Shift・Ctrl+クリック=追加・解除 / 空白をドラッグ=範囲選択(左→右=完全に囲んだ図形、右→左=触れた図形も) / Ctrl+A=ページ内全選択 / Esc=解除。タッチ操作は左の「範囲選択」ツール(タップで追加・解除、ドラッグで範囲追加)。<br>複数選択中はドラッグで一緒に移動、見た目(塗り・透過・枠など)は一括変更、Deleteで一括削除。頂点の○で変形(線・ポリゴン等を1つ選択時)。「凡例を貼り付け」ボタンで色分けの凡例を図面に貼り付け、移動・サイズ変更ができます。図形の文字は選択ツールでドラッグして自由に移動できます。何も選択していない状態で見た目を変えると、次に描く図形の既定になります。</div>`;
+  b.querySelectorAll('[data-k]').forEach(x=>x.onclick=()=>{type=x.dataset.k;panel()});
+  b.querySelectorAll('[data-sa]').forEach(x=>x.onclick=()=>{const m=x.dataset.sa,cf=z=>z.f===fi,ids=L=>new Set(L.map(z=>z.id));
+   if(m==='none')sels=new Set();
+   else if(m==='page')sels=ids(anns.filter(z=>cf(z)&&z.page===page));
+   else if(m==='all')sels=ids(anns.filter(cf));
+   else{const ts=new Set(SA().map(z=>z.type));if(!ts.size)ts.add(type);sels=ids(anns.filter(z=>cf(z)&&ts.has(z.type)))}
+   drawAll();panel()});
+  b.querySelectorAll('[data-lg]').forEach(x=>x.oninput=()=>{const L=SA().filter(z=>z.shape==='legend');if(x.dataset.lg==='sz'){const v=+x.value;L.forEach(z=>{z.lw=pgs[z.page-1].W*v/100;legFix(z)});$('v_lz').textContent=v}else L.forEach(z=>z.bg=x.checked);drawAll()});
+  $('legb').onclick=pasteLegend;$('wps').onchange=()=>setWp($('wps').value);
+  b.querySelectorAll('[data-tr]').forEach(x=>x.onclick=()=>{SA().forEach(z=>{delete z.to});drawAll()});
+  b.querySelectorAll('[data-c]').forEach(x=>x.onclick=()=>{SA().filter(z=>z.shape!=='legend').forEach(z=>{z.type=x.dataset.c;z.color=null;if(z.s){delete z.s.sc;delete z.s.fc}});drawAll();panel()});
+  b.querySelectorAll('[data-s]').forEach(x=>x.oninput=()=>{const k=x.dataset.s,v=x.type==='checkbox'?x.checked:x.type==='range'?+x.value:x.value;
+   if(k==='tr'){set('fo',1-v/100);$('v_tr').textContent=v}else if(k==='str'){set('so',1-v/100);$('v_str').textContent=v}else if(k==='sw'){set('sw',v);$('v_sw').textContent=v}else if(k==='showText'){SA().forEach(z=>z.showText=v);drawAll()}else set(k,v)});
+  const m=$('memo');if(m)m.oninput=()=>{a.memo=m.value;drawAll()}}
+ else{const L=anns.slice().sort((x,y)=>x.f-y.f||x.page-y.page);
+  b.innerHTML=L.length?L.map(a=>`<div class="it${sels.has(a.id)?' sl':''}" data-i="${a.id}"><i style="background:${a.color||TT(a.type).c}"></i>${label(a)}${a.memo?' - '+a.memo.replace(/</g,''):''}<span>${files.length>1&&files[a.f]?files[a.f].name.slice(0,14)+' ':''}p.${a.page}</span></div>`).join(''):'<div style="color:var(--mu)">記入はまだありません</div>';
+  b.querySelectorAll('.it').forEach(x=>x.onclick=async e=>{const a=anns.find(y=>y.id==x.dataset.i);
+   if((e.shiftKey||e.ctrlKey||e.metaKey)&&a.f===fi){sels.has(a.id)?sels.delete(a.id):sels.add(a.id);drawAll();panel();return}
+   if(a.f!==fi)await sw(a.f,a.page);sels=new Set([a.id]);drawAll();focusAnn(a);panel()})}}
+
+/* ---- 保存・出力 ---- */
+$('sv').onclick=()=>dl(URL.createObjectURL(new Blob([JSON.stringify({anns,imported:[...imported],names:files.map(f=>f.name),wp})],{type:'application/json'})),'劣化記入.json');
+$('ld').onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());anns=j.anns;anns.forEach(a=>{if(a.f==null)a.f=0});imported=new Set(j.imported||[]);uid=Math.max(0,...anns.map(a=>a.id))+1;if(WPS.includes(j.wp))applyWp(j.wp);anns.forEach(a=>{if(a.shape==='legend')legFix(a)});
+ if(j.names&&files.length&&j.names.join()!==files.map(f=>f.name).join())$('msg').textContent='※保存時と開いているファイルの順序が異なります';sels=new Set();drawAll();panel()}catch(x){alert('読込に失敗しました')}};
+$('png').onclick=()=>{const g=pgs[page-1];if(!g||!g.rendered)return;sels=new Set();drawAll();
+ const s=new XMLSerializer().serializeToString(g.svg).replace('<svg','<svg xmlns="http://www.w3.org/2000/svg" width="'+g.W+'" height="'+g.H+'"');
+ const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=g.W;c.height=g.H;const x=c.getContext('2d');x.drawImage(g.cv,0,0);x.drawImage(i,0,0,g.W,g.H);dl(c.toDataURL('image/png'),(files[fi]?files[fi].name.replace(/\.[^.]+$/,''):'図面')+'_p'+page+'.png')};
+ i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s)};
+/* ---- 印刷(図面+記入を1ページ1枚に合成して印刷) ---- */
+let pmode='print';
+$('prt').onclick=()=>openDlg('print');$('pdfb').onclick=()=>openDlg('pdf');
+function openDlg(m){if(!pgs.length){alert('図面を開いてください');return}pmode=m;const t=m==='pdf'?'PDF保存':'印刷';$('pdt').textContent=t;$('po').textContent=t;$('prow').style.display=m==='pdf'?'none':'';$('pdn').textContent=total;$('pd').showModal()}
+addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='p'){e.preventDefault();openDlg('print')}});
+$('pc').onclick=()=>$('pd').close();
+$('po').onclick=()=>{$('pd').close();const all=document.querySelector('input[name=pr]:checked').value==='all';const idx=all?pgs.map((_,i)=>i):[page-1];if(pmode==='pdf')doPdf(idx);else doPrint(idx,$('psz').value)};
+async function pageBlob(i){const g=pgs[i],c=document.createElement('canvas');c.width=g.W;c.height=g.H;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,g.W,g.H);
+ if(g.img)x.drawImage(g.img,0,0);else await g.p.render({canvasContext:x,viewport:g.v,annotationMode:$('imp').checked?0:1}).promise;
+ const sv=sels;sels=new Set();const inner=anns.filter(a=>a.f===fi&&a.page===i+1).map(a=>shape(a,0,g.W)).join('');sels=sv;
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${g.W}" height="${g.H}" viewBox="0 0 ${g.W} ${g.H}" font-family="Hiragino Sans,Noto Sans JP,Yu Gothic,Meiryo,sans-serif">${inner}</svg>`;
+ const im=await new Promise((res,rej)=>{const t=new Image();t.onload=()=>res(t);t.onerror=rej;t.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+ x.drawImage(im,0,0,g.W,g.H);return await new Promise(r=>c.toBlob(r,'image/jpeg',.95))}
+async function pageUrl(i){return URL.createObjectURL(await pageBlob(i))}
+let pUrls=[];
+function pClean(){$('printArea').innerHTML='';document.documentElement.classList.remove('pr');document.body.classList.remove('pr');pUrls.forEach(u=>URL.revokeObjectURL(u));pUrls=[];$('msg').textContent=''}
+async function doPrint(idx,sz){pClean();const my=gen,[w,h]=sz==='A3'?[297,420]:[210,297],m=8;let html='';
+ try{for(let k=0;k<idx.length;k++){const i=idx[k];$('msg').textContent=`印刷準備中 ${k+1}/${idx.length}`;await prep(i);await impPage(i);if(my!==gen)return pClean();
+   const g=pgs[i],u=await pageUrl(i),land=g.W>g.H,aw=land?h-2*m:w-2*m,ah=(land?w:h)-2*m-1;pUrls.push(u);
+   html+=`<div class="pf ${land?'pl':'pp'}"><img src="${u}" style="${g.W/g.H>aw/ah?'width:100%;height:auto':`height:${ah}mm;width:auto`}"></div>`}}
+ catch(err){console.error(err);pClean();alert('印刷の準備に失敗しました');return}
+ $('printArea').innerHTML=`<style>@page pp{size:${w}mm ${h}mm;margin:${m}mm}@page pl{size:${h}mm ${w}mm;margin:${m}mm}.pp{page:pp}.pl{page:pl}.pf{break-after:page}.pf:last-child{break-after:auto}.pf img{display:block;margin:0 auto}</style>`+html;
+ await Promise.all([...$('printArea').querySelectorAll('img')].map(im=>im.decode().catch(()=>{})));
+ document.documentElement.classList.add('pr');document.body.classList.add('pr');$('msg').textContent='';
+ addEventListener('afterprint',pClean,{once:true});window.print()}
+/* ---- PDF保存(記入入りの図面を1ページ1枚のPDFに書き出し) ---- */
+function makePdf(P){const enc=new TextEncoder(),ch=[],off=[];let len=0;
+ const put=x=>{const b=typeof x==='string'?enc.encode(x):x;ch.push(b);len+=b.length},N=2+3*P.length;
+ put('%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n');
+ off[1]=len;put('1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n');
+ off[2]=len;put(`2 0 obj\n<</Type/Pages/Count ${P.length}/Kids[${P.map((_,k)=>(3+3*k)+' 0 R').join(' ')}]>>\nendobj\n`);
+ P.forEach((g,k)=>{const o=3+3*k,pw=g.pw.toFixed(2),ph=g.ph.toFixed(2),c=`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
+  off[o]=len;put(`${o} 0 obj\n<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pw} ${ph}]/Resources<</XObject<</Im0 ${o+2} 0 R>>>>/Contents ${o+1} 0 R>>\nendobj\n`);
+  off[o+1]=len;put(`${o+1} 0 obj\n<</Length ${c.length}>>\nstream\n${c}\nendstream\nendobj\n`);
+  off[o+2]=len;put(`${o+2} 0 obj\n<</Type/XObject/Subtype/Image/Width ${g.w}/Height ${g.h}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${g.jpg.length}>>\nstream\n`);put(g.jpg);put('\nendstream\nendobj\n')});
+ const xp=len;let x=`xref\n0 ${N+1}\n0000000000 65535 f \n`;for(let i=1;i<=N;i++)x+=String(off[i]).padStart(10,'0')+' 00000 n \n';
+ put(x+`trailer\n<</Size ${N+1}/Root 1 0 R>>\nstartxref\n${xp}\n%%EOF\n`);return new Blob(ch,{type:'application/pdf'})}
+async function doPdf(idx){const my=gen,P=[];
+ try{for(let k=0;k<idx.length;k++){const i=idx[k];$('msg').textContent=`PDF作成中 ${k+1}/${idx.length}`;await prep(i);await impPage(i);if(my!==gen){$('msg').textContent='';return}
+   const g=pgs[i],bl=await pageBlob(i);P.push({w:g.W,h:g.H,pw:g.p?g.W/g.v.scale:g.W*.75,ph:g.p?g.H/g.v.scale:g.H*.75,jpg:new Uint8Array(await bl.arrayBuffer())})}}
+ catch(err){console.error(err);$('msg').textContent='';alert('PDFの作成に失敗しました');return}
+ const u=URL.createObjectURL(makePdf(P));dl(u,(files[fi]?files[fi].name.replace(/\.[^.]+$/,''):'図面')+'_記入.pdf');setTimeout(()=>URL.revokeObjectURL(u),10000);$('msg').textContent=''}
+function dl(u,n){const a=document.createElement('a');a.href=u;a.download=n;a.click()}
+tools();panel();
+</script></body></html>
